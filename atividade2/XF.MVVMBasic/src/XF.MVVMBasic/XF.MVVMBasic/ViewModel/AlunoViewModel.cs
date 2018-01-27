@@ -27,7 +27,8 @@ namespace XF.MVVMBasic.ViewModel
             OnAdicionarAlunoCMD = new OnAdicionarAlunoCMD(this);
             OnSairCMD = new Command(OnSair);
             OnNovoCMD = new Command(OnNovo);
-        }
+        }
+
         public static Aluno GetAluno()
         {
             var aluno = new Aluno()
