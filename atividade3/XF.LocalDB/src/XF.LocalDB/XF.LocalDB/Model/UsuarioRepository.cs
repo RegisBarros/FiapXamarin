@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace XF.LocalDB.Model
@@ -17,20 +19,63 @@ namespace XF.LocalDB.Model
             }
         }
 
-        public static bool IsAutorizado(Usuario paramLogin)
+        public async Task<bool> IsAutorizado(string username, string password)
         {
-            XElement xmlUsuarios = XElement.Parse(App.UsuarioVM.Stream);
-            var usuarios = new List<Usuario>();
-            foreach (var item in xmlUsuarios.Elements("usuario"))
+            IEnumerable<Usuario> usuarios = await ObterUsuarios();
+
+            return usuarios.Any(user => user.Username == username && user.Password == password);
+        }
+
+        private async Task<IEnumerable<Usuario>> ObterUsuarios()
+        {
+            var users = new List<Usuario>();
+
+            try
             {
-                Usuario usuario = new Usuario()
+                using (var httpClient = new HttpClient())
                 {
-                    Username = item.Element("username").Value,
-                    Password = item.Element("password").Value
-                };
-                usuarios.Add(usuario);
+                    string response = await httpClient.GetStringAsync("http://wopek.com/xml/usuarios.xml");
+
+                    if (!string.IsNullOrEmpty(response))
+                    {
+                        XElement xmlUsers = XElement.Parse(response);
+
+                        foreach (var item in xmlUsers.Elements("usuario"))
+                        {
+                            var user = new Usuario()
+                            {
+                                Username = item.Element("username").Value,
+                                Password = item.Element("password").Value
+                            };
+
+                            users.Add(user);
+                        }
+                    }
+                }
             }
-            return usuarios.Any(user => user.Username == paramLogin.Username && user.Password == paramLogin.Password);
+            catch
+            {
+                return ObterUsuariosInMemory();
+            }
+
+            return users;
+        }
+
+        private IEnumerable<Usuario> ObterUsuariosInMemory()
+        {
+            return new List<Usuario>()
+            {
+                new Usuario()
+                {
+                    Username = "admin",
+                    Password = "admin"
+                },
+                new Usuario()
+                {
+                    Username = "aluno",
+                    Password = "aluno"
+                }
+            };
         }
     }
 }
